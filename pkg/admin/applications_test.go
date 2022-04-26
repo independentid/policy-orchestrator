@@ -1,11 +1,13 @@
 package admin_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/hexa-org/policy-orchestrator/pkg/admin"
 	"github.com/hexa-org/policy-orchestrator/pkg/admin/test"
 	"github.com/hexa-org/policy-orchestrator/pkg/healthsupport"
+	idqlPolicy "github.com/hexa-org/policy-orchestrator/pkg/policy"
 	"github.com/hexa-org/policy-orchestrator/pkg/websupport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -14,6 +16,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -134,4 +137,49 @@ func (suite *ApplicationsSuite) TestApplication_Update_withErroneousGet() {
 	body, _ := io.ReadAll(resp.Body)
 	assert.Contains(suite.T(), string(body), "Something went wrong.")
 	assert.Contains(suite.T(), string(body), "Unable to contact orchestrator.")
+}
+
+func TestMigration(t *testing.T) {
+	hexaPolicy := idqlPolicy.HexaPolicy{
+		PolicyId: "1234",
+		Meta: &idqlPolicy.MetaType{
+			ApplicationId: "App1",
+			Version:       "xyz",
+			Date:          "2021-08-01 21:32:44 UTC",
+			Description:   "This is a test",
+			Layer:         "superficial",
+		},
+		Subject: idqlPolicy.SubjectType{
+			Type: "anyAuthenticated",
+			Role: "basic",
+		},
+		Actions: []idqlPolicy.ActionType{
+			{
+				Name:      "GetProfile",
+				ActionUri: "ietf:http:GET",
+				Exclude:   false,
+			},
+		},
+		Object: idqlPolicy.ObjectType{
+			AssetId:  "asset123",
+			PathSpec: "/Profile",
+		},
+	}
+
+	// Old fashioned policy should continue to serialize as before
+	policy1 := admin.Policy{Version: "aVersion", Action: "anAction", Subject: admin.Subject{AuthenticatedUsers: []string{"aUser"}}, Object: admin.Object{Resources: []string{"/"}}}
+	assert.False(t, policy1.IsV2Policy())
+	jsonBytes, err := json.Marshal(policy1)
+	assert.NoError(t, err)
+	jsonString := string(jsonBytes)
+	assert.False(t, strings.Contains(jsonString, "hexaPolicy"))
+
+	// New policy should have null/nil values and and a hexaPolicy Value
+	policy2 := admin.CreateV2Policy(&hexaPolicy)
+	assert.True(t, policy2.IsV2Policy())
+	jsonBytes, err = json.Marshal(policy2)
+	assert.NoError(t, err)
+	jsonString = string(jsonBytes)
+	assert.True(t, strings.Contains(jsonString, "hexaPolicy"))
+
 }

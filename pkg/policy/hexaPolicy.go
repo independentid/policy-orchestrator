@@ -15,17 +15,12 @@ type MetaType struct {
 	Layer         string `json:"layer,omitempty"`
 }
 
-const (
-	subjectTypeAny           = "any"
-	subjectTypeAuthenticated = "anyAuthenticated"
-	subjectTypeBasic         = "basic"
-)
-
 type SubjectType struct {
-	Type       string   `json:"type"`
-	ProviderId string   `json:"providerId,omitempty"`
-	Role       string   `json:"role,omitempty"`
-	Members    []string `json:"members,omitempty"`
+	Type       string                 `json:"type"`
+	ProviderId string                 `json:"providerId,omitempty"`
+	Role       string                 `json:"role,omitempty"`
+	Members    []string               `json:"members,omitempty"`
+	Config     map[string]interface{} `json:"config,omitempty"`
 }
 
 type ActionType struct {

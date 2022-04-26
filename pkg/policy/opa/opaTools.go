@@ -27,7 +27,7 @@ type SubjectInfo struct {
 	Claims    map[string]interface{} `json:"claims,omitempty"`
 	Expires   int64                  `json:"expires,omitempty"`
 	Type      string                 `json:"type,omitempty"`
-	Subject   string                 `json:"subject,omitempty"`
+	Sub       string                 `json:"sub,omitempty"`
 	Issuer    string                 `json:"iss,omitempty"`
 	Audience  string                 `json:"aud,omitempty"`
 	IssuedAt  int64                  `json:"iat,omitempty"` //Unix time
@@ -88,8 +88,8 @@ func PrepareSubjectInfo(r *http.Request) (*SubjectInfo, error) {
 		} else if strings.EqualFold(parts[0], "basic") {
 			username, _, ok := r.BasicAuth()
 			if ok {
-				info.Type = "Basic"
-				info.Subject = username
+				info.Type = "basic"
+				info.Sub = username
 			}
 		} else {
 			// This is done for diagnostic purposes
@@ -105,7 +105,7 @@ func PrepareSubjectInfo(r *http.Request) (*SubjectInfo, error) {
 
 func (info *SubjectInfo) MapJwtClaims(claims HexaClaims, tknType string) {
 	info.Type = tknType
-	info.Subject = claims.Subject
+	info.Sub = claims.Subject
 	info.Audience = claims.Audience
 	info.NotBefore = claims.NotBefore
 	info.IssuedAt = claims.IssuedAt
@@ -131,12 +131,10 @@ func PrepareReqParams(r *http.Request) *ReqParams {
 }
 
 // PrepareInput takes request information and prepares an "input" structure for use with HexaPolicy and OPA.
-func PrepareInput(r *http.Request) *OpaInput {
+func PrepareInput(r *http.Request) *OpaInfo {
 	var inputData OpaInfo
 	inputData.Req = PrepareReqParams(r)
 	inputData.Subject, _ = PrepareSubjectInfo(r)
 
-	var input OpaInput
-	input.Input = inputData
-	return &input
+	return &inputData
 }

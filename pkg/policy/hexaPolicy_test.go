@@ -3,100 +3,20 @@ package policy
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"log"
 	"strings"
 	"testing"
 )
 
 func TestUnMarshall(t *testing.T) {
-	jsonValue := `
-[
-	{
-	"id": "CanaryProfileGoogleUpdate",
-	"meta": {
-	"version": "0.1",
-	"date": "2021-08-01 21:32:44 UTC",
-	"description": "Access enabling user self service for users with role",
-	"applicationId": "CanaryBank1",
-	"layer": "Browser"
-	},
-	"subject": {
-	"type": "op",
-	"providerId": "myGoogleIDP",
-	"role": "canarySelfService"
-	},
-	"actions": [
-	{
-	"name": "createProfile",
-	"actionUri": "accountCreate"
-	},
-	{ "name": "editProfile",
-	"actionUri": "accountEdit"
-	}
-	],
-	"object": {
-	"assetId": "CanaryProfileService",
-	"pathSpec": "/Profile/*"
-	}
-	},
-	{
-	"id": "EditProfileGoogleUpdate AdminContractor",
-	"meta": {
-	"version": "0.1",
-	"date": "2021-08-01 21:32:44 UTC",
-	"description": "Access policy enabling contract staff to edit profiles",
-	"applicationId": "CanaryBank1",
-	"layer": "Browser"
-	},
-	"subject": {
-	"type": "op",
-	"providerId": "myGoogleIDP"
-	},
-	"actions": [
-	{
-	"name": "editProfile",
-	"actionUri": "accountEdit"
-	}
-	],
-	"object": {
-	"assetId": "CanaryProfileService",
-	"pathSpec": "/Profile/*"
-	},
-	"condition": {
-	"rule": "User:employeeType eq contract",
-	"action": "allow"
-	}
-	},
-	{
-	"id": "CanaryProfileInternalNetUpdate",
-	"meta": {
-	"version": "0.1",
-	"date": "2021-08-01 21:32:44 UTC",
-	"description": "Enabling profile update for internal network services",
-	"applicationId": "CanaryBank1",
-	"layer": "Services"
-	},
-	"subject": {
-	"type": "net",
-	"cidr": "192.168.1.0/24",
-	"members": ["WorkFlowSvcAcnt"]
-	},
-	"actions": [
-	{
-	"name": "createProfile",
-	"actionUri": "accountCreate"
-	},
-	{ "name": "editProfile",
-	"actionUri": "accountEdit"
-	}
-	],
-	"object": {
-	"assetId": "CanaryProfileService",
-	"pathSpec": "/Profile/*"
-	}
-	}
-]`
 
-	policies, err := UnmarshallJSONPolicies([]byte(jsonValue))
+	jsonBytes, err := ioutil.ReadFile("hexaPolicies_test.json")
+	if err != nil {
+		log.Fatalln("Error reading rego file: " + err.Error())
+	}
+
+	policies, err := UnmarshallJSONPolicies([]byte(jsonBytes))
 	if err != nil {
 		fmt.Println("Error parsing: " + err.Error())
 	}

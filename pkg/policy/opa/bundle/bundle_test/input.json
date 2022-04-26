@@ -1,0 +1,1 @@
+{"req":{"ip":"127.0.0.1:51609","protocol":"HTTP/1.1","method":"GET","path":"/testpath","param":{"a":["b"],"c":["d"]},"header":{"Accept-Encoding":["gzip"],"Authorization":["Basic dGVzdFVzZXI6Z29vZCZiYWQ="],"User-Agent":["Go-http-client/1.1"]},"time":"2022-04-24T13:23:04.983538-07:00"},"subject":{"type":"basic","sub":"testUser"}}

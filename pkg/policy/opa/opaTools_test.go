@@ -19,17 +19,9 @@ import (
 	"time"
 )
 
-type TestData struct {
-	VerifyKey string
-}
-
-func unauthorized(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusUnauthorized)
-}
-
 func TestAnonymous(t *testing.T) {
 
-	server := setUpMockServer("verifymenow")
+	server := GetUpMockServer("verifymenow")
 
 	resp, err := http.Get(fmt.Sprintf("http://%s/testpath?a=b&c=d", server.Addr))
 	if err != nil {
@@ -56,7 +48,7 @@ func TestAnonymous(t *testing.T) {
 
 func TestBasicAuth(t *testing.T) {
 
-	server := setUpMockServer("verifyme")
+	server := GetUpMockServer("verifyme")
 
 	client := &http.Client{Timeout: time.Second * 10}
 
@@ -84,17 +76,17 @@ func TestBasicAuth(t *testing.T) {
 
 	subInfo := input.Input.Subject
 	assert.Equal(t, subInfo.Type, "Basic")
-	assert.Equal(t, subInfo.Subject, "testUser")
+	assert.Equal(t, subInfo.Sub, "testUser")
 	websupport.Stop(server)
 }
 
 func TestJwtAuth(t *testing.T) {
 	key := "sercrethatmaycontainch@r$32chars!"
-	server := setUpMockServer(key)
+	server := GetUpMockServer(key)
 
 	client := &http.Client{Timeout: time.Minute * 2}
 
-	toknstr, err := generateBearerToken(key, "TestUser", time.Now().Add(time.Minute*1))
+	toknstr, err := GenerateBearerToken(key, "TestUser", time.Now().Add(time.Minute*1))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -123,19 +115,19 @@ func TestJwtAuth(t *testing.T) {
 
 	subInfo := input.Input.Subject
 	assert.Equal(t, "Bearer+JWT", subInfo.Type)
-	assert.Equal(t, "TestUser", subInfo.Subject)
+	assert.Equal(t, "TestUser", subInfo.Sub)
 	assert.Equal(t, 3, len(input.Input.Req.Header))
 	websupport.Stop(server)
 }
 
 func TestExpiredJwtAuth(t *testing.T) {
 	key := "sercrethatmaycontainch@r$32chars!"
-	server := setUpMockServer(key)
+	server := GetUpMockServer(key)
 
 	client := &http.Client{Timeout: time.Minute * 2}
 
 	oldDate := time.Date(2020, 1, 1, 12, 00, 0, 0, time.UTC)
-	toknstr, err := generateBearerToken(key, "TestUser", oldDate)
+	toknstr, err := GenerateBearerToken(key, "TestUser", oldDate)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -164,7 +156,7 @@ func TestExpiredJwtAuth(t *testing.T) {
  This is a mock server that simply returns the http request infor as an OPA input structure to the requesting client.
  Main purpose is to test how OpaInput works against http.Request
 */
-func setUpMockServer(key string) *http.Server {
+func GetUpMockServer(key string) *http.Server {
 	err := os.Setenv("OPATOOLS_JWTVERIFYKEY", key)
 	if err != nil {
 		log.Fatalln(err)
@@ -184,7 +176,7 @@ func setUpMockServer(key string) *http.Server {
 	return server
 }
 
-func generateBearerToken(key string, subject string, expires time.Time) (string, error) {
+func GenerateBearerToken(key string, subject string, expires time.Time) (string, error) {
 	claims := &opaTools.HexaClaims{
 		&jwt.StandardClaims{
 			Issuer:    "testIssuer",

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	idqlPolicy "github.com/hexa-org/policy-orchestrator/pkg/policy"
 	"github.com/hexa-org/policy-orchestrator/pkg/websupport"
 	"log"
 	"net/http"
@@ -19,10 +20,23 @@ type Application struct {
 }
 
 type Policy struct {
-	Version string
-	Action  string
-	Subject Subject
-	Object  Object
+	Version    string
+	Action     string
+	Subject    Subject
+	Object     Object
+	HexaPolicy *idqlPolicy.HexaPolicy `json:"hexaPolicy,omitempty"`
+}
+
+func CreateV2Policy(hexaPolicy *idqlPolicy.HexaPolicy) Policy {
+	return Policy{HexaPolicy: hexaPolicy}
+}
+
+func (p *Policy) IsV2Policy() bool {
+	return p.HexaPolicy != nil
+}
+
+func (p *Policy) GetV2Policy() *idqlPolicy.HexaPolicy {
+	return p.HexaPolicy
 }
 
 type Subject struct {
