@@ -39,10 +39,8 @@ type OpaInfo struct {
 	Subject *SubjectInfo `json:"subject"`
 }
 
-/*
-Used to construct a JSON marshallable "input" structure to be fed to an OPA Query endpoint. This
-structure builds a standardize set of input parameters for use with Hexa Policy
-*/
+// OpaInput used to construct a JSON marshallable "input" structure to be fed to an OPA Query endpoint. This
+// structure builds a standardize set of input parameters for use with Hexa Policy
 type OpaInput struct {
 	Input OpaInfo `json:"input"`
 }
@@ -113,7 +111,7 @@ func (info *SubjectInfo) MapJwtClaims(claims HexaClaims, tknType string) {
 	info.Expires = claims.ExpiresAt
 
 	roleStr := claims.Roles
-	info.Roles = strings.Split(roleStr, " ")
+	info.Roles = strings.Split(strings.ToLower(roleStr), " ")
 }
 
 func PrepareReqParams(r *http.Request) *ReqParams {

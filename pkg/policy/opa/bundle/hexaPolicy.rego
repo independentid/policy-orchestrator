@@ -1,8 +1,10 @@
 package hexaPolicy
 
+import future.keywords.in
 import data.policies
 
 default allow = false
+
 # Returns whether the current operation is allowed
 allow {
     count(allowSet) > 0
@@ -29,10 +31,32 @@ calcActionName(action,id) = val {
 allowSet[name] {
     some i
     subjectMatch(policies[i].subject)
+    subjectMembersMatch(policies[i].subject)
+    subjectRoleMatch(policies[i].subject)
     actionsMatch(policies[i].actions)
     objectMatch(policies[i].object)
     policies[i].id
     name := policies[i].id  # this will be id of the policy
+}
+
+subjectMembersMatch(subject) {
+    # Match if no members value specified
+    not subject.members
+}
+
+subjectMembersMatch(subject) {
+    subject.members
+    lower(input.subject.sub) == lower(subject.members[_])
+}
+
+subjectRoleMatch(subject) {
+    not subject.role
+}
+
+subjectRoleMatch(subject) {
+    subject.role
+    input.subject.roles
+    lower(subject.role) == lower(input.subject.roles[_])
 }
 
 subjectMatch(subject) {

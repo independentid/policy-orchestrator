@@ -11,8 +11,7 @@
       },
       "subject": {
         "type": "basic",
-        "providerId": "myGoogleIDP",
-        "role": "canarySelfService"
+        "providerId": "myGoogleIDP"
       },
       "actions": [
         {
@@ -46,8 +45,7 @@
         "config": {
           "iss": "testIssuer",
           "aud": "testAudience"
-        },
-        "role": "canarySelfService"
+        }
       },
       "actions": [
         {
@@ -79,8 +77,7 @@
       "subject": {
         "type": "net",
         "providerId": "myTestIDP",
-        "cidr" : "127.0.0.1/24",
-        "role": "canarySelfService"
+        "cidr" : "127.0.0.1/24"
       },
       "actions": [
         {
@@ -101,59 +98,71 @@
       }
     },
     {
-      "id": "EditProfileGoogleUpdate AdminContractor",
+      "id": "TestJwtRole",
       "meta": {
         "version": "0.1",
         "date": "2021-08-01 21:32:44 UTC",
-        "description": "Access policy enabling contract staff to edit profiles",
+        "description": "Access enabling user self service for users with role",
         "applicationId": "CanaryBank1",
         "layer": "Browser"
       },
       "subject": {
-        "type": "op",
-        "providerId": "myGoogleIDP"
+        "type": "jwt",
+        "providerId": "myTestIDP",
+        "config": {
+          "iss": "testIssuer",
+          "aud": "testAudience"
+        },
+        "members" : ["BaSicBob"],
+        "role": "abc"
       },
       "actions": [
         {
-          "name": "editProfile",
-          "actionUri": "accountEdit"
+          "name": "createProfileJwtRole",
+          "actionUri": "ietf:http:POST:/testpath*"
+        },
+        { "name": "getProfileJwtRole",
+          "actionUri": "ietf:http:GET:/testpath*"
         }
       ],
       "object": {
         "assetId": "CanaryProfileService",
-        "pathSpec": "/Profile/*"
-      },
-      "condition": {
-        "rule": "User:employeeType eq contract",
-        "action": "allow"
+        "pathSpec": "/testpath*"
       }
     },
     {
-      "id": "CanaryProfileInternalNetUpdate",
+      "id": "TestJwtMember",
       "meta": {
         "version": "0.1",
         "date": "2021-08-01 21:32:44 UTC",
-        "description": "Enabling profile update for internal network services",
+        "description": "Access enabling user self service for users with role",
         "applicationId": "CanaryBank1",
-        "layer": "Services"
+        "layer": "Browser"
       },
       "subject": {
-        "type": "net",
-        "cidr": "192.168.1.0/24",
-        "members": ["WorkFlowSvcAcnt"]
+        "type": "jwt",
+        "providerId": "myTestIDP",
+        "config": {
+          "iss": "testIssuer",
+          "aud": "testAudience"
+        },
+        "members": ["JwtAlice","BasicBoB"]
       },
       "actions": [
         {
-          "name": "createProfile",
-          "actionUri": "accountCreate"
+          "name": "createProfileJwtMember",
+          "actionUri": "ietf:http:POST:/testpath*"
         },
-        { "name": "editProfile",
-          "actionUri": "accountEdit"
+        { "name": "editProfileJwtMember",
+          "actionUri": "ietf:http:PUT:/testpath*"
+        },
+        { "name": "getProfileJwtMember",
+          "actionUri": "ietf:http:GET:/testpath*"
         }
       ],
       "object": {
         "assetId": "CanaryProfileService",
-        "pathSpec": "/Profile/*"
+        "pathSpec": "/testpath*"
       }
     }
   ]
