@@ -20,11 +20,15 @@ import (
 )
 
 /*
-This test suite tests Hexa IDQL Support with OPA which is implemented in Rego (bundle/hexaPolicy.rego)
+This test suite tests Hexa IDQL Support with OPA which is implemented in Rego (bundle/hexaPolicyV1.rego)
 */
+
+const regoV1Path = "bundle/hexaPolicyV1.rego"
+const dataV1Path = "bundle/bundle_test/data-V1.json"
+
 func TestIdqlBasic(t *testing.T) {
 
-	server := GetUpMockServer("verifyme")
+	server := GetUpMockServer("verifyme", "")
 
 	client := &http.Client{Timeout: time.Second * 10}
 
@@ -42,7 +46,7 @@ func TestIdqlBasic(t *testing.T) {
 	inputStr := string(body)
 	fmt.Println("input = " + inputStr)
 
-	results := RunRego(body)
+	results := RunRego(body, regoV1Path, dataV1Path)
 	if results == nil {
 		log.Fatalln("Received nil OPA results!")
 	}
@@ -61,7 +65,7 @@ func TestIdqlBasic(t *testing.T) {
 
 func TestIdqlJwt(t *testing.T) {
 	key := "sercrethatmaycontainch@r$32chars!"
-	server := GetUpMockServer(key)
+	server := GetUpMockServer(key, "")
 
 	client := &http.Client{Timeout: time.Minute * 2}
 
@@ -83,7 +87,7 @@ func TestIdqlJwt(t *testing.T) {
 	inputStr := string(body)
 	fmt.Println("input = " + inputStr)
 
-	results := RunRego(body)
+	results := RunRego(body, regoV1Path, dataV1Path)
 	if results == nil {
 		log.Fatalln("Received nil OPA results!")
 	}
@@ -101,7 +105,7 @@ func TestIdqlJwt(t *testing.T) {
 
 func TestIdqlIp(t *testing.T) {
 	key := "sercrethatmaycontainch@r$32chars!"
-	server := GetUpMockServer(key)
+	server := GetUpMockServer(key, "")
 
 	client := &http.Client{Timeout: time.Minute * 2}
 
@@ -118,7 +122,7 @@ func TestIdqlIp(t *testing.T) {
 	inputStr := string(body)
 	fmt.Println("input = " + inputStr)
 
-	results := RunRego(body)
+	results := RunRego(body, regoV1Path, dataV1Path)
 	if results == nil {
 		log.Fatalln("Received nil OPA results!")
 	}
@@ -138,7 +142,7 @@ a delete which should also be refused as it is not explicitly enabled.
 */
 func TestIdqlIpActions(t *testing.T) {
 	key := "sercrethatmaycontainch@r$32chars!"
-	server := GetUpMockServer(key)
+	server := GetUpMockServer(key, "")
 
 	client := &http.Client{Timeout: time.Minute * 2}
 
@@ -158,7 +162,7 @@ func TestIdqlIpActions(t *testing.T) {
 	inputStr := string(body)
 	fmt.Println("input = " + inputStr)
 
-	results := RunRego(body)
+	results := RunRego(body, regoV1Path, dataV1Path)
 	if results == nil {
 		log.Fatalln("Received nil OPA results!")
 	}
@@ -186,7 +190,7 @@ func TestIdqlIpActions(t *testing.T) {
 	inputStr = string(body)
 	fmt.Println("input = " + inputStr)
 
-	results = RunRego(body)
+	results = RunRego(body, regoV1Path, dataV1Path)
 	if results == nil {
 		log.Fatalln("Received nil OPA results!")
 	}
@@ -213,7 +217,7 @@ func TestIdqlIpActions(t *testing.T) {
 	inputStr = string(body)
 	fmt.Println("input = " + inputStr)
 
-	results = RunRego(body)
+	results = RunRego(body, regoV1Path, dataV1Path)
 	if results == nil {
 		log.Fatalln("Received nil OPA results!")
 	}
@@ -228,7 +232,7 @@ func TestIdqlIpActions(t *testing.T) {
 
 func TestIdqlMember(t *testing.T) {
 	key := "sercrethatmaycontainch@r$32chars!"
-	server := GetUpMockServer(key)
+	server := GetUpMockServer(key, "")
 	fmt.Println("\nGET Test with token and role")
 	client := &http.Client{Timeout: time.Minute * 2}
 
@@ -250,7 +254,7 @@ func TestIdqlMember(t *testing.T) {
 	inputStr := string(body)
 	fmt.Println("input = " + inputStr)
 
-	results := RunRego(body)
+	results := RunRego(body, regoV1Path, dataV1Path)
 	if results == nil {
 		log.Fatalln("Received nil OPA results!")
 	}
@@ -266,7 +270,7 @@ func TestIdqlMember(t *testing.T) {
 
 func TestIdqlRole(t *testing.T) {
 	key := "sercrethatmaycontainch@r$32chars!"
-	server := GetUpMockServer(key)
+	server := GetUpMockServer(key, "")
 	fmt.Println("\nGET Test with token and role")
 	client := &http.Client{Timeout: time.Minute * 2}
 
@@ -288,7 +292,7 @@ func TestIdqlRole(t *testing.T) {
 	inputStr := string(body)
 	fmt.Println("input = " + inputStr)
 
-	results := RunRego(body)
+	results := RunRego(body, regoV1Path, dataV1Path)
 	if results == nil {
 		log.Fatalln("Received nil OPA results!")
 	}
@@ -303,16 +307,16 @@ func TestIdqlRole(t *testing.T) {
 	websupport.Stop(server)
 }
 
-func RunRego(inputByte []byte) rego.ResultSet {
+func RunRego(inputByte []byte, regoPath string, dataPath string) rego.ResultSet {
 	ctx := context.Background()
 
-	regoBytes, err := ioutil.ReadFile("bundle/hexaPolicy.rego")
+	regoBytes, err := ioutil.ReadFile(regoPath)
 	if err != nil {
 		log.Fatalln("Error reading rego file: " + err.Error())
 	}
 	regoString := string(regoBytes)
 
-	dataBytes, err := ioutil.ReadFile("bundle/bundle_test/data.json")
+	dataBytes, err := ioutil.ReadFile(dataPath)
 	if err != nil {
 		log.Fatalln("Error reading data file: " + err.Error())
 	}
@@ -331,7 +335,7 @@ func RunRego(inputByte []byte) rego.ResultSet {
 	regoHandle := rego.New(
 		rego.Query("data.hexaPolicy"),
 		rego.Package("hexaPolicy"),
-		rego.Module("bundle/hexaPolicy.rego", regoString),
+		rego.Module("bundle/hexaPolicyV1.rego", regoString),
 		rego.Input(&input),
 		rego.Store(store),
 		//rego.Trace(true),

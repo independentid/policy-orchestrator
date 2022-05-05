@@ -24,7 +24,7 @@ func TestUnMarshall(t *testing.T) {
 
 	name := policies[0].Meta.ApplicationId
 	assert.Equal(t, "CanaryBank1", name, "Parsed name should match")
-	assert.Equal(t, 3, len(policies))
+	assert.Equal(t, 4, len(policies))
 	assert.Equal(t, "CanaryProfileService", policies[2].Object.AssetId)
 	assert.IsTypef(t, []HexaPolicy{}, policies, "Expecting type HexaPolicy")
 

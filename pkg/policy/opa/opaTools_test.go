@@ -21,7 +21,7 @@ import (
 
 func TestAnonymous(t *testing.T) {
 
-	server := GetUpMockServer("verifymenow")
+	server := GetUpMockServer("verifymenow", "")
 
 	resp, err := http.Get(fmt.Sprintf("http://%s/testpath?a=b&c=d", server.Addr))
 	if err != nil {
@@ -29,26 +29,26 @@ func TestAnonymous(t *testing.T) {
 	}
 	body, _ := io.ReadAll(resp.Body)
 
-	var input opaTools.OpaInput
+	var input opaTools.OpaInfo
 	err = json.Unmarshal(body, &input)
 	assert.NoError(t, err)
 	fmt.Println(string(body))
-	assert.True(t, strings.HasPrefix(input.Input.Req.ClientIp, "127.0.0.1:"))
-	reqInfo := input.Input.Req
+	reqInfo := input.Req
+
 	assert.NotNil(t, reqInfo)
-	assert.NotNil(t, reqInfo.ClientIp)
+	assert.True(t, strings.HasPrefix(reqInfo.ClientIp, "127.0.0.1:"))
 	reqTime := reqInfo.Time
 	assert.True(t, reqTime.Before(time.Now()))
 
-	subInfo := input.Input.Subject
+	subInfo := input.Subject
 	assert.Equal(t, "Anonymous", subInfo.Type)
-	assert.Equal(t, 2, len(input.Input.Req.Header))
+	assert.Equal(t, 2, len(reqInfo.Header))
 	websupport.Stop(server)
 }
 
 func TestBasicAuth(t *testing.T) {
 
-	server := GetUpMockServer("verifyme")
+	server := GetUpMockServer("verifyme", "")
 
 	client := &http.Client{Timeout: time.Second * 10}
 
@@ -63,26 +63,27 @@ func TestBasicAuth(t *testing.T) {
 	}
 	body, _ := io.ReadAll(resp.Body)
 
-	var input opaTools.OpaInput
+	var input opaTools.OpaInfo
 	err = json.Unmarshal(body, &input)
 	assert.NoError(t, err)
+	reqInfo := input.Req
 	fmt.Println(string(body))
-	assert.True(t, strings.HasPrefix(input.Input.Req.ClientIp, "127.0.0.1:"))
-	reqInfo := input.Input.Req
+	assert.True(t, strings.HasPrefix(reqInfo.ClientIp, "127.0.0.1:"))
+
 	assert.NotNil(t, reqInfo)
 	assert.NotNil(t, reqInfo.ClientIp)
 	reqTime := reqInfo.Time
 	assert.True(t, reqTime.Before(time.Now()))
 
-	subInfo := input.Input.Subject
-	assert.Equal(t, subInfo.Type, "Basic")
+	subInfo := input.Subject
+	assert.Equal(t, subInfo.Type, "basic")
 	assert.Equal(t, subInfo.Sub, "testUser")
 	websupport.Stop(server)
 }
 
 func TestJwtAuth(t *testing.T) {
 	key := "sercrethatmaycontainch@r$32chars!"
-	server := GetUpMockServer(key)
+	server := GetUpMockServer(key, "")
 
 	client := &http.Client{Timeout: time.Minute * 2}
 
@@ -102,27 +103,30 @@ func TestJwtAuth(t *testing.T) {
 	}
 	body, _ := io.ReadAll(resp.Body)
 
-	var input opaTools.OpaInput
+	var input opaTools.OpaInfo
 	err = json.Unmarshal(body, &input)
 	assert.NoError(t, err)
+	reqInfo := input.Req
+	subInfo := input.Subject
+
 	fmt.Println(string(body))
-	assert.True(t, strings.HasPrefix(input.Input.Req.ClientIp, "127.0.0.1:"))
-	reqInfo := input.Input.Req
+	assert.True(t, strings.HasPrefix(reqInfo.ClientIp, "127.0.0.1:"))
+
 	assert.NotNil(t, reqInfo)
 	assert.NotNil(t, reqInfo.ClientIp)
 	reqTime := reqInfo.Time
 	assert.True(t, reqTime.Before(time.Now()))
+	assert.Equal(t, 3, len(reqInfo.Header))
 
-	subInfo := input.Input.Subject
 	assert.Equal(t, "Bearer+JWT", subInfo.Type)
 	assert.Equal(t, "TestUser", subInfo.Sub)
-	assert.Equal(t, 3, len(input.Input.Req.Header))
+
 	websupport.Stop(server)
 }
 
 func TestExpiredJwtAuth(t *testing.T) {
 	key := "sercrethatmaycontainch@r$32chars!"
-	server := GetUpMockServer(key)
+	server := GetUpMockServer(key, "")
 
 	client := &http.Client{Timeout: time.Minute * 2}
 
@@ -143,11 +147,14 @@ func TestExpiredJwtAuth(t *testing.T) {
 	}
 	body, _ := io.ReadAll(resp.Body)
 
-	var input opaTools.OpaInput
+	var input opaTools.OpaInfo
 	err = json.Unmarshal(body, &input)
 	assert.NoError(t, err)
+
+	subInfo := input.Subject
+
 	fmt.Println(string(body))
-	assert.True(t, strings.HasPrefix(input.Input.Subject.Type, "Invalid"))
+	assert.True(t, strings.HasPrefix(subInfo.Type, "Invalid"))
 
 	websupport.Stop(server)
 }
@@ -156,14 +163,19 @@ func TestExpiredJwtAuth(t *testing.T) {
  This is a mock server that simply returns the http request infor as an OPA input structure to the requesting client.
  Main purpose is to test how OpaInput works against http.Request
 */
-func GetUpMockServer(key string) *http.Server {
+func GetUpMockServer(key string, path string) *http.Server {
 	err := os.Setenv("OPATOOLS_JWTVERIFYKEY", key)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	if path == "" {
+		path = "/testpath"
+	}
 	listener, _ := net.Listen("tcp", "localhost:0")
+
+	// Need to fix this so it will just serve anything for policy testing
 	server := websupport.Create(listener.Addr().String(), func(router *mux.Router) {
-		router.HandleFunc("/testpath", func(w http.ResponseWriter, r *http.Request) {
+		router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			input := opaTools.PrepareInput(r)
 			marshal, _ := json.Marshal(input)
 			_, _ = w.Write(marshal)

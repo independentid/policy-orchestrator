@@ -1,5 +1,6 @@
 package hexaPolicy
 
+# Rego Policy Interpreter for V1.0 hexaPolicy (IDQL)
 import future.keywords.in
 import data.policies
 

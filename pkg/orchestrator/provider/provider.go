@@ -1,7 +1,5 @@
 package provider
 
-import idqlPolicy "github.com/hexa-org/policy-orchestrator/pkg/policy"
-
 type Provider interface {
 	Name() string
 	DiscoverApplications(IntegrationInfo) ([]ApplicationInfo, error)
@@ -21,11 +19,10 @@ type ApplicationInfo struct {
 }
 
 type PolicyInfo struct {
-	Version    string
-	Action     string
-	Subject    SubjectInfo
-	Object     ObjectInfo
-	HexaPolicy *idqlPolicy.HexaPolicy `json:"hexaPolicy,omitempty"`
+	Version string
+	Action  string
+	Subject SubjectInfo
+	Object  ObjectInfo
 }
 
 type SubjectInfo struct {
