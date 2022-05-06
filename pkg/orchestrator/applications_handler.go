@@ -3,7 +3,7 @@ package orchestrator
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/hexa-org/policy-orchestrator/pkg/orchestrator/provider"
+	"github.com/hexa-org/policy-orchestrator/pkg/policysupport"
 	"log"
 	"net/http"
 	"strings"
@@ -39,7 +39,7 @@ type Object struct {
 type ApplicationsHandler struct {
 	applicationsGateway ApplicationsDataGateway
 	integrationsGateway IntegrationsDataGateway
-	providers           map[string]provider.Provider
+	providers           map[string]Provider
 }
 
 func (handler ApplicationsHandler) List(w http.ResponseWriter, _ *http.Request) {
@@ -79,8 +79,8 @@ func (handler ApplicationsHandler) GetPolicies(w http.ResponseWriter, r *http.Re
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	integration := provider.IntegrationInfo{Name: integrationRecord.Name, Key: integrationRecord.Key}
-	application := provider.ApplicationInfo{ObjectID: applicationRecord.ObjectId, Name: applicationRecord.Name, Description: applicationRecord.Description}
+	integration := IntegrationInfo{Name: integrationRecord.Name, Key: integrationRecord.Key}
+	application := ApplicationInfo{ObjectID: applicationRecord.ObjectId, Name: applicationRecord.Name, Description: applicationRecord.Description}
 	p := handler.providers[strings.ToLower(integrationRecord.Provider)] // todo - test for lower?
 	records, err := p.GetPolicyInfo(integration, application)
 	if err != nil {
@@ -117,14 +117,14 @@ func (handler ApplicationsHandler) SetPolicies(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	integration := provider.IntegrationInfo{Name: integrationRecord.Name, Key: integrationRecord.Key}
-	application := provider.ApplicationInfo{ObjectID: applicationRecord.ObjectId, Name: applicationRecord.Name, Description: applicationRecord.Description}
+	integration := IntegrationInfo{Name: integrationRecord.Name, Key: integrationRecord.Key}
+	application := ApplicationInfo{ObjectID: applicationRecord.ObjectId, Name: applicationRecord.Name, Description: applicationRecord.Description}
 	pro := handler.providers[strings.ToLower(integrationRecord.Provider)] // todo - test for lower?
-	var policyInfos []provider.PolicyInfo
+	var policyInfos []policysupport.PolicyInfo
 	for _, policy := range policies {
-		info := provider.PolicyInfo{Version: policy.Version, Action: policy.Action,
-			Subject: provider.SubjectInfo{AuthenticatedUsers: policy.Subject.AuthenticatedUsers},
-			Object:  provider.ObjectInfo{Resources: policy.Object.Resources}}
+		info := policysupport.PolicyInfo{Version: policy.Version, Action: policy.Action,
+			Subject: policysupport.SubjectInfo{AuthenticatedUsers: policy.Subject.AuthenticatedUsers},
+			Object:  policysupport.ObjectInfo{Resources: policy.Object.Resources}}
 		policyInfos = append(policyInfos, info)
 	}
 	err = pro.SetPolicyInfo(integration, application, policyInfos)

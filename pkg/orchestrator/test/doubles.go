@@ -1,7 +1,8 @@
 package orchestrator_test
 
 import (
-	"github.com/hexa-org/policy-orchestrator/pkg/orchestrator/provider"
+	"github.com/hexa-org/policy-orchestrator/pkg/orchestrator"
+	"github.com/hexa-org/policy-orchestrator/pkg/policysupport"
 )
 
 type NoopProvider struct {
@@ -13,22 +14,22 @@ func (n *NoopProvider) Name() string {
 	return "noop"
 }
 
-func (n *NoopProvider) DiscoverApplications(info provider.IntegrationInfo) (apps []provider.ApplicationInfo, err error) {
+func (n *NoopProvider) DiscoverApplications(info orchestrator.IntegrationInfo) (apps []orchestrator.ApplicationInfo, err error) {
 	if info.Name == n.Name() {
-		found := []provider.ApplicationInfo{{ObjectID: "anId", Name: "appEngine"}, {ObjectID: "anotherId", Name: "cloudRun"}, {ObjectID: "andAnotherId", Name: "kubernetes"}}
+		found := []orchestrator.ApplicationInfo{{ObjectID: "anId", Name: "appEngine"}, {ObjectID: "anotherId", Name: "cloudRun"}, {ObjectID: "andAnotherId", Name: "kubernetes"}}
 		apps = append(apps, found...)
 		n.Discovered = n.Discovered + 3
 	}
 	return apps, n.Err
 }
 
-func (n *NoopProvider) GetPolicyInfo(_ provider.IntegrationInfo, _ provider.ApplicationInfo) ([]provider.PolicyInfo, error) {
-	return []provider.PolicyInfo{
-		{"aVersion", "anAction", provider.SubjectInfo{AuthenticatedUsers: []string{"aUser"}}, provider.ObjectInfo{Resources: []string{"/"}}},
-		{"aVersion", "anotherAction", provider.SubjectInfo{AuthenticatedUsers: []string{"anotherUser"}}, provider.ObjectInfo{Resources: []string{"/"}}},
+func (n *NoopProvider) GetPolicyInfo(_ orchestrator.IntegrationInfo, _ orchestrator.ApplicationInfo) ([]policysupport.PolicyInfo, error) {
+	return []policysupport.PolicyInfo{
+		{"aVersion", "anAction", policysupport.SubjectInfo{AuthenticatedUsers: []string{"aUser"}}, policysupport.ObjectInfo{Resources: []string{"/"}}},
+		{"aVersion", "anotherAction", policysupport.SubjectInfo{AuthenticatedUsers: []string{"anotherUser"}}, policysupport.ObjectInfo{Resources: []string{"/"}}},
 	}, n.Err
 }
 
-func (n *NoopProvider) SetPolicyInfo(_ provider.IntegrationInfo, _ provider.ApplicationInfo, _ []provider.PolicyInfo) error {
+func (n *NoopProvider) SetPolicyInfo(_ orchestrator.IntegrationInfo, _ orchestrator.ApplicationInfo, _ []policysupport.PolicyInfo) error {
 	return n.Err
 }
