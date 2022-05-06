@@ -1,4 +1,4 @@
-package providers_test
+package decisionsupportproviders_test
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
-	"github.com/hexa-org/policy-orchestrator/pkg/decisionsupport/providers"
+	"github.com/hexa-org/policy-orchestrator/pkg/decisionsupportproviders"
 	"github.com/hexa-org/policy-orchestrator/pkg/healthsupport"
 	opaTools "github.com/hexa-org/policy-orchestrator/pkg/policy/opa"
 	"github.com/hexa-org/policy-orchestrator/pkg/websupport"
@@ -29,15 +29,15 @@ import (
 )
 
 func TestOpaDecisionProvider_BuildInput_BuildInput(t *testing.T) {
-	provider := providers.OpaDecisionProvider{}
+	provider := decisionsupportproviders.OpaDecisionProvider{}
 
 	req, _ := http.NewRequest("GET", "http://aDomain.com/noop", nil)
 	req.RequestURI = "/noop"
 	query, _ := provider.BuildInput(req)
-	casted := query.(providers.OpaQuery).Input
+	casted := query.(decisionsupportproviders.OpaQuery).Input
 
-	assert.Equal(t, "GET", casted["req"].(*providers.ReqParams).Method)
-	assert.Equal(t, "/noop", casted["req"].(*providers.ReqParams).Path)
+	assert.Equal(t, "GET", casted["req"].(*decisionsupportproviders.ReqParams).Method)
+	assert.Equal(t, "/noop", casted["req"].(*decisionsupportproviders.ReqParams).Path)
 }
 
 type MockClient struct {
@@ -54,7 +54,7 @@ func (m *MockClient) Do(_ *http.Request) (*http.Response, error) {
 func TestOpaDecisionProvider_Allow(t *testing.T) {
 	mockClient := new(MockClient)
 	mockClient.response = []byte("{\"result\":true}")
-	provider := providers.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
 
 	req, _ := http.NewRequest("GET", "http://aDomain.com/noop", nil)
 	req.RequestURI = "/noop"
@@ -68,7 +68,7 @@ func TestOpaDecisionProvider_AllowWithRequestErr(t *testing.T) {
 	mockClient := new(MockClient)
 	mockClient.response = []byte("{\"result\":true}")
 	mockClient.err = errors.New("oops")
-	provider := providers.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
 
 	req, _ := http.NewRequest("GET", "http://aDomain.com/noop", nil)
 	req.RequestURI = "/noop"
@@ -82,7 +82,7 @@ func TestOpaDecisionProvider_AllowWithRequestErr(t *testing.T) {
 func TestOpaDecisionProvider_AllowWithResponseErr(t *testing.T) {
 	mockClient := new(MockClient)
 	mockClient.response = []byte("__bad__ {\"result\":true}")
-	provider := providers.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
 
 	req, _ := http.NewRequest("GET", "http://aDomain.com/noop", nil)
 	req.RequestURI = "/noop"
@@ -97,16 +97,16 @@ func TestOpaDecisionAnonymous(t *testing.T) {
 
 	mockClient := new(MockClient)
 	mockClient.response = []byte("{\"result\":true}")
-	provider := providers.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
 
 	req, _ := http.NewRequest("GET", "http://aDomain.com/noop", nil)
 	req.RequestURI = "/noop"
 	req.RemoteAddr = "127.0.0.1:8888"
 	req.Header.Set("a", "b")
 	query, _ := provider.BuildInput(req)
-	casted := query.(providers.OpaQuery).Input
+	casted := query.(decisionsupportproviders.OpaQuery).Input
 
-	reqInfo := casted["req"].(*providers.ReqParams)
+	reqInfo := casted["req"].(*decisionsupportproviders.ReqParams)
 	assert.NotNil(t, reqInfo)
 	assert.Equal(t, "GET", reqInfo.Method)
 	assert.Equal(t, "/noop", reqInfo.Path)
@@ -115,7 +115,7 @@ func TestOpaDecisionAnonymous(t *testing.T) {
 	reqTime := reqInfo.Time
 	assert.True(t, reqTime.Before(time.Now()))
 
-	subInfo := casted["subject"].(*providers.SubjectInfo)
+	subInfo := casted["subject"].(*decisionsupportproviders.SubjectInfo)
 	assert.Equal(t, "Anonymous", subInfo.Type)
 	assert.Equal(t, 1, len(reqInfo.Header))
 }
@@ -124,15 +124,15 @@ func TestOpaDecisionBasicAuth(t *testing.T) {
 
 	mockClient := new(MockClient)
 	mockClient.response = []byte("{\"result\":true}")
-	provider := providers.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
 
 	req, _ := http.NewRequest("GET", "http://aDomain.com/noop", nil)
 	req.SetBasicAuth("testUser", "good&bad")
 	req.RequestURI = "/noop"
 	query, _ := provider.BuildInput(req)
-	casted := query.(providers.OpaQuery).Input
+	casted := query.(decisionsupportproviders.OpaQuery).Input
 
-	subInfo := casted["subject"].(*providers.SubjectInfo)
+	subInfo := casted["subject"].(*decisionsupportproviders.SubjectInfo)
 	assert.Equal(t, "basic", subInfo.Type)
 	assert.Equal(t, "testUser", subInfo.Sub)
 }
@@ -146,7 +146,7 @@ func TestJwtAuth(t *testing.T) {
 
 	mockClient := new(MockClient)
 	mockClient.response = []byte("{\"result\":true}")
-	provider := providers.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
 
 	toknstr, err := GenerateBearerToken(key, "TestUser", time.Now().Add(time.Minute*1))
 	if err != nil {
@@ -160,10 +160,10 @@ func TestJwtAuth(t *testing.T) {
 	req.Header.Set("Authorization", authz)
 
 	query, _ := provider.BuildInput(req)
-	casted := query.(providers.OpaQuery).Input
+	casted := query.(decisionsupportproviders.OpaQuery).Input
 
-	reqInfo := casted["req"].(*providers.ReqParams)
-	subInfo := casted["subject"].(*providers.SubjectInfo)
+	reqInfo := casted["req"].(*decisionsupportproviders.ReqParams)
+	subInfo := casted["subject"].(*decisionsupportproviders.SubjectInfo)
 
 	assert.NotNil(t, reqInfo)
 	assert.NotNil(t, reqInfo.ClientIp)
@@ -184,7 +184,7 @@ func TestExpiredJwtAuth(t *testing.T) {
 
 	mockClient := new(MockClient)
 	mockClient.response = []byte("{\"result\":true}")
-	provider := providers.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
 
 	oldDate := time.Date(2020, 1, 1, 12, 00, 0, 0, time.UTC)
 	toknstr, err := GenerateBearerToken(key, "TestUser", oldDate)
@@ -198,9 +198,9 @@ func TestExpiredJwtAuth(t *testing.T) {
 	}
 	req.Header.Set("Authorization", authz)
 	query, _ := provider.BuildInput(req)
-	casted := query.(providers.OpaQuery).Input
+	casted := query.(decisionsupportproviders.OpaQuery).Input
 
-	subInfo := casted["subject"].(*providers.SubjectInfo)
+	subInfo := casted["subject"].(*decisionsupportproviders.SubjectInfo)
 
 	assert.True(t, strings.HasPrefix(subInfo.Type, "Invalid"))
 }
@@ -213,7 +213,7 @@ func TestUnknownAuth(t *testing.T) {
 	}
 	mockClient := new(MockClient)
 	mockClient.response = []byte("{\"result\":true}")
-	provider := providers.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: mockClient, Url: "aUrl"}
 
 	oldDate := time.Date(2020, 1, 1, 12, 00, 0, 0, time.UTC)
 	toknstr, err := GenerateBearerToken(key, "TestUser", oldDate)
@@ -227,9 +227,9 @@ func TestUnknownAuth(t *testing.T) {
 	}
 	req.Header.Set("Authorization", authz)
 	query, _ := provider.BuildInput(req)
-	casted := query.(providers.OpaQuery).Input
+	casted := query.(decisionsupportproviders.OpaQuery).Input
 
-	subInfo := casted["subject"].(*providers.SubjectInfo)
+	subInfo := casted["subject"].(*decisionsupportproviders.SubjectInfo)
 
 	assert.True(t, strings.HasPrefix(subInfo.Type, "Unknown-"))
 }
@@ -238,12 +238,12 @@ func TestUnknownAuth(t *testing.T) {
 The following section excercises the Allow method and validates OPA Policy code
 */
 
-const regoV0path = "../resources/hexaPolicyV0_1.rego"
-const dataV0path = "../resources/test/data-V0_1.json"
+const regoV0path = "../decisionsupport/resources/hexaPolicyV0_1.rego"
+const dataV0path = "../decisionsupport/resources/test/data-V0_1.json"
 
 func TestAllowBasic(t *testing.T) {
 	client := &http.Client{Timeout: time.Minute * 2}
-	provider := providers.OpaDecisionProvider{Client: client, Url: "/auth/hexaPolicy"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: client, Url: "/auth/hexaPolicy"}
 	opaServer := GetMockOpaServer(&provider)
 	assert.NotNil(t, opaServer)
 
@@ -283,7 +283,7 @@ func TestAllowJwt(t *testing.T) {
 		log.Fatalln("Unexpected error setting verify key")
 	}
 	client := &http.Client{Timeout: time.Minute * 2}
-	provider := providers.OpaDecisionProvider{Client: client, Url: "/auth/hexaPolicy"}
+	provider := decisionsupportproviders.OpaDecisionProvider{Client: client, Url: "/auth/hexaPolicy"}
 	opaServer := GetMockOpaServer(&provider)
 	assert.NotNil(t, opaServer)
 
@@ -325,7 +325,7 @@ func GenerateBearerToken(key string, subject string, expires time.Time) (string,
 /*
  This is a mock OPA server that processes the input provided against a test set of policy rules and data (regoV0path, dataV0path)
 */
-func GetMockOpaServer(provider *providers.OpaDecisionProvider) *http.Server {
+func GetMockOpaServer(provider *decisionsupportproviders.OpaDecisionProvider) *http.Server {
 
 	serveUrl, _ := url.Parse(provider.Url)
 	path := serveUrl.Path

@@ -1,4 +1,4 @@
-package providers
+package decisionsupportproviders
 
 import (
 	"bytes"
